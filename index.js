@@ -17,8 +17,7 @@ import adminRoutes from './routes/admin.js';
 
 const app = express();
 
-// Middleware
-app.use(cors({
+const corsOptions = {
   origin: function(origin, callback) {
     const allowedOrigins = [
       process.env.CLIENT_URL,
@@ -33,9 +32,15 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
+};
 
-// ✅ MongoDB — cached connection (Vercel serverless এর জন্য)
+// Middleware
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
 let isConnected = false;
 
 const connectDB = async () => {
@@ -51,7 +56,6 @@ const connectDB = async () => {
     throw err;
   }
 };
-
 
 app.use(async (req, res, next) => {
   try {
@@ -89,7 +93,6 @@ app.use((err, req, res, next) => {
     message: err.message || 'Internal server error'
   });
 });
-
 
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5000;
