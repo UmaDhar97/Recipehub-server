@@ -6,7 +6,6 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 
-// Route imports
 import authRoutes from './routes/auth.js';
 import recipeRoutes from './routes/recipes.js';
 import userRoutes from './routes/users.js';
@@ -17,26 +16,21 @@ import adminRoutes from './routes/admin.js';
 
 const app = express();
 
-const corsOptions = {
-  origin: function(origin, callback) {
-    const allowedOrigins = [
-      process.env.CLIENT_URL,
-      'http://localhost:5173'
-    ];
-    if (!origin || allowedOrigins.some(o => o && origin.startsWith(o.replace(/\/$/, '')))) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
+// CORS — সব origin allow
+app.use(cors({
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+}));
 
-// Middleware
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.sendStatus(200);
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -66,12 +60,10 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Health check
 app.get('/', (req, res) => {
   res.json({ status: 'success', message: 'RecipeHub API is running!' });
 });
 
-// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/users', userRoutes);
@@ -80,12 +72,10 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({ status: 'error', message: 'Route not found' });
 });
 
-// Global error handler
 app.use((err, req, res, next) => {
   console.error('Server Error:', err.stack);
   res.status(err.status || 500).json({
